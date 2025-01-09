@@ -1,23 +1,24 @@
-import { loadRecipe, state } from './model.js';
+import {
+  getSearchResultPage,
+  loadRecipe,
+  loadSearchResults,
+  state,
+} from './model.js';
 import recipeView from './views/recipeView.js';
+import searchView from './views/searchView.js';
+import resultsView from './views/resultsView.js';
+import paginationView from './views/paginationView.js';
 
 import 'core-js/stable'; // for polyfilling browsers that don't support ES6 features
 import 'regenerator-runtime/runtime'; // for polyfilling browsers that don't support Async features
-
-// const recipeContainer = document.querySelector('.recipe');
-
-const timeout = function (s) {
-  return new Promise(function (_, reject) {
-    setTimeout(function () {
-      reject(new Error(`Request took too long! Timeout after ${s} second`));
-    }, s * 1000);
-  });
-};
-
 // NEW API URL (instead of the one shown in the video)
 // https://forkify-api.jonas.io
 
 ///////////////////////////////////////
+
+// if (module.hot) {
+//   module.hot.accept();
+// }
 
 const controlRecipes = async function () {
   try {
@@ -31,15 +32,41 @@ const controlRecipes = async function () {
     // 2)Rendring the recipe
     recipeView.render(recipe);
   } catch (error) {
-    alert(error);
+    recipeView.renderError();
   }
 };
 
-controlRecipes();
+const controlSearchResults = async function () {
+  try {
+    //1)Get Search Query
+    resultsView.renderSpinner();
+    const query = searchView.getQuery();
+    if (!query) return;
+    console.log(query);
+    //2)Loading Search Results
+    await loadSearchResults(query);
 
-// window.addEventListener('hashchange', controlRecipe);
-// window.addEventListener('load', controlRecipes);
-// 5ed6604591c37cdc054bc886
-['load', 'hashchange'].forEach(ev =>
-  window.addEventListener(ev, controlRecipes)
-);
+    //3)Rendering Results
+    resultsView.render(getSearchResultPage(1));
+
+    //4)Rendering Pagination
+    paginationView.render(state.search);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const controlPagination = function (goToPage) {
+  //3)Rendering new Results
+  resultsView.render(getSearchResultPage(goToPage));
+
+  //4)Rendering new Pagination
+  paginationView.render(state.search);
+};
+
+const init = function () {
+  recipeView.addRenderHandler(controlRecipes);
+  searchView.addSearchHandler(controlSearchResults);
+  paginationView.addClickhandler(controlPagination);
+};
+init();
