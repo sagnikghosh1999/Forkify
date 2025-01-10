@@ -19,6 +19,8 @@ export default class View {
   }
 
   update(data) {
+    if (!this._parentElement || !data) return; // Add this check
+
     this._data = data;
     const newMarkup = this._generateMarkup();
 
@@ -28,14 +30,21 @@ export default class View {
       this._parentElement.querySelectorAll('*')
     );
 
+    // Push new elements to current elements array if needed
+    if (newElements.length > currentElements.length) {
+      currentElements.push(...newElements.slice(currentElements.length));
+    }
+
     newElements.forEach((newElement, index) => {
       const curElement = currentElements[index];
-      //Update the text content
+      if (!curElement) return; // Skip if current element does not exist
+
+      // Update the text content
       if (
         !newElement.isEqualNode(curElement) &&
         newElement?.firstChild?.nodeValue.trim() !== ''
       ) {
-        curElement.textContent = newElement.textContent;
+        curElement.textContent = newElement?.textContent;
       }
 
       if (!newElement.isEqualNode(curElement)) {

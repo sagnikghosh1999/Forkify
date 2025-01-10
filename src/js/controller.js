@@ -6,6 +6,7 @@ import {
   removeBookmark,
   state,
   updateServings,
+  uploadRecipe,
 } from './model.js';
 import recipeView from './views/recipeView.js';
 import searchView from './views/searchView.js';
@@ -15,6 +16,8 @@ import bookmarksView from './views/bookmarksView.js';
 
 import 'core-js/stable'; // for polyfilling browsers that don't support ES6 features
 import 'regenerator-runtime/runtime'; // for polyfilling browsers that don't support Async features
+import addRecipeView from './views/addRecipeView.js';
+import { MODAL_CLOSE_SECONDS } from './config.js';
 // NEW API URL (instead of the one shown in the video)
 // https://forkify-api.jonas.io
 
@@ -44,6 +47,7 @@ const controlRecipes = async function () {
     recipeView.render(recipe);
   } catch (error) {
     recipeView.renderError();
+    console.log(error);
   }
 };
 
@@ -103,6 +107,35 @@ const controlBookmarks = function () {
   bookmarksView.render(state.bookmarks);
 };
 
+const controlAddRecipe = async function (newRecipe) {
+  try {
+    //Show Loading Spinner
+    addRecipeView.renderSpinner();
+
+    //Upload the recipe Data
+    await uploadRecipe(newRecipe);
+
+    //Render the new recipe
+    recipeView.render(state.recipe);
+
+    //Render success message
+    addRecipeView.renderMessage();
+
+    //Change id in URL
+    window.history.pushState(null, '', `#${state.recipe.id}`);
+
+    //Render bookmark view
+    bookmarksView.render(state.bookmarks);
+
+    //Close the window
+    setTimeout(() => {
+      addRecipeView.toggleWindow();
+    }, MODAL_CLOSE_SECONDS * 1000);
+  } catch (error) {
+    addRecipeView.renderError(error);
+  }
+};
+
 const init = function () {
   recipeView.addRenderHandler(controlRecipes);
   recipeView.addUpdateServingsHandler(controlServings);
@@ -110,5 +143,6 @@ const init = function () {
   paginationView.addClickhandler(controlPagination);
   recipeView.addBookmarkHandler(controlAddBookmark);
   bookmarksView.addRenderHandler(controlBookmarks);
+  addRecipeView.addUploadHandler(controlAddRecipe);
 };
 init();
